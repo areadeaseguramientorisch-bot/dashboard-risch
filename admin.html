@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Actualizar Datos Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --navy:#0d2b5e; --navy2:#163472; --green:#2d7d46; --green2:#38a057;
+    --red:#c0392b; --gold:#e8a020; --bg:#f0f4f8; --surface:#fff;
+    --border:#cdd7e3; --text:#1a2a40; --text2:#4a6080; --text3:#7a90a8;
+    --font:'Segoe UI',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+
+  .header{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:20px 32px;
+    display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--green2);}
+  .header h1{color:#fff;font-size:18px;font-weight:700;}
+  .header p{color:rgba(255,255,255,0.6);font-size:12px;margin-top:2px;}
+  .badge-admin{background:var(--gold);color:#fff;padding:4px 12px;border-radius:20px;
+    font-size:11px;font-weight:700;margin-left:auto;letter-spacing:0.5px;}
+
+  .container{max-width:960px;margin:32px auto;padding:0 24px;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .card-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;
+    display:flex;align-items:center;gap:8px;}
+  .card-sub{font-size:12px;color:var(--text3);margin-bottom:18px;}
+
+  .step-badge{background:var(--navy);color:#fff;width:24px;height:24px;border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+
+  /* INDICADORES TABLE */
+  .ind-table{width:100%;border-collapse:collapse;}
+  .ind-table th{background:var(--bg);color:var(--text2);font-size:11px;text-transform:uppercase;
+    letter-spacing:1px;padding:8px 12px;text-align:left;border-bottom:2px solid var(--border);}
+  .ind-table td{padding:10px 12px;border-bottom:1px solid var(--bg);font-size:13px;vertical-align:middle;}
+  .ind-table tr:last-child td{border-bottom:none;}
+
+  .file-drop{border:2px dashed var(--border);border-radius:8px;padding:10px 14px;
+    background:var(--bg);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;
+    font-size:12px;color:var(--text3);}
+  .file-drop:hover{border-color:var(--navy2);background:#e8f0fb;color:var(--navy);}
+  .file-drop.loaded{border-color:var(--green2);background:rgba(56,160,87,0.06);color:var(--green);}
+  .file-drop input{display:none;}
+
+  input[type=text]{border:1px solid var(--border);border-radius:6px;padding:7px 10px;
+    font-size:12px;width:100%;font-family:var(--font);color:var(--text);}
+  input[type=text]:focus{outline:none;border-color:var(--navy2);}
+
+  select{border:1px solid var(--border);border-radius:6px;padding:7px 10px;
+    font-size:12px;width:100%;font-family:var(--font);color:var(--text);background:white;}
+  select:focus{outline:none;border-color:var(--navy2);}
+
+  .btn{padding:10px 22px;border-radius:8px;border:none;cursor:pointer;font-size:13px;
+    font-weight:700;font-family:var(--font);transition:all .2s;}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{background:var(--navy2);}
+  .btn-success{background:var(--green2);color:#fff;}
+  .btn-success:hover{background:var(--green);}
+  .btn-sm{padding:6px 14px;font-size:12px;}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .add-row{display:flex;align-items:center;gap:8px;padding:10px 0;
+    color:var(--navy2);font-size:13px;cursor:pointer;font-weight:600;}
+  .add-row:hover{color:var(--navy);}
+
+  .status-bar{padding:12px 16px;border-radius:8px;font-size:13px;margin-top:16px;display:none;}
+  .status-ok{background:rgba(56,160,87,.1);border:1px solid rgba(56,160,87,.3);color:var(--green);}
+  .status-err{background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);color:var(--red);}
+  .status-info{background:rgba(13,43,94,.08);border:1px solid rgba(13,43,94,.2);color:var(--navy);}
+
+  .preview-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px;}
+  .preview-table th{background:var(--navy);color:rgba(255,255,255,.9);padding:6px 10px;text-align:left;}
+  .preview-table td{padding:6px 10px;border-bottom:1px solid var(--bg);color:var(--text2);}
+  .preview-table td:first-child{color:var(--text);font-weight:500;}
+
+  .badge-ok{background:rgba(56,160,87,.15);color:var(--green);border:1px solid rgba(56,160,87,.3);
+    padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;}
+  .badge-err{background:rgba(192,57,43,.12);color:var(--red);border:1px solid rgba(192,57,43,.25);
+    padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;}
+
+  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;}
+  .summary-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+  .summary-box .val{font-size:22px;font-weight:700;color:var(--navy);}
+  .summary-box .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+
+  .download-section{text-align:center;padding:20px;background:linear-gradient(135deg,rgba(13,43,94,.04),rgba(45,125,70,.04));
+    border:2px dashed var(--border);border-radius:12px;margin-top:8px;}
+  .download-section h3{font-size:16px;color:var(--navy);margin-bottom:6px;}
+  .download-section p{font-size:12px;color:var(--text3);margin-bottom:16px;}
+
+  .steps-guide{counter-reset:step;}
+  .step-item{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;}
+  .step-num{background:var(--green2);color:#fff;width:22px;height:22px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;}
+  .step-text{font-size:13px;color:var(--text2);line-height:1.5;}
+  .step-text strong{color:var(--text);}
+
+  .period-input{display:flex;gap:10px;align-items:center;}
+  .period-input label{font-size:12px;color:var(--text2);white-space:nowrap;}
+
+  #removeRow{display:none;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🔐 Panel de Administración — Dashboard RISCH</h1>
+    <p>Red de Salud Chachapoyas · Área de Aseguramiento</p>
+  </div>
+  <div class="badge-admin">SOLO ADMIN</div>
+</div>
+
+<div class="container">
+
+  <!-- PASO 1: PERIODO -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span> Período de reporte</div>
+    <div class="card-sub">Indica el período que corresponde a estos datos. Aparecerá en el header del dashboard.</div>
+    <div class="period-input">
+      <label>Período:</label>
+      <input type="text" id="periodo" value="ENE – MAR 2026" style="max-width:220px;">
+      <span style="font-size:12px;color:var(--text3);">Ej: ABR – JUN 2026 · JUL – SEP 2026</span>
+    </div>
+  </div>
+
+  <!-- PASO 2: CARGAR INDICADORES -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">2</span> Cargar Excel de Indicadores (totales)</div>
+    <div class="card-sub">Agrega una fila por cada indicador. Sube su Excel de totales y asígnale nombre y meta.</div>
+
+    <table class="ind-table" id="indTable">
+      <thead>
+        <tr>
+          <th style="width:28%">Nombre del Indicador</th>
+          <th style="width:14%">Meta (%)</th>
+          <th style="width:35%">Excel de Totales</th>
+          <th style="width:35%">Excel de Detalle de Pacientes</th>
+          <th style="width:8%"></th>
+        </tr>
+      </thead>
+      <tbody id="indBody">
+        <!-- filas generadas por JS -->
+      </tbody>
+    </table>
+
+    <div class="add-row" onclick="addRow()">
+      <span style="font-size:18px;">＋</span> Agregar indicador
+    </div>
+  </div>
+
+  <!-- PASO 3: PROCESAR -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">3</span> Procesar y generar datos.json</div>
+    <div class="card-sub">Verifica que todos los indicadores tengan su Excel cargado, luego genera el archivo.</div>
+
+    <button class="btn btn-primary" onclick="processar()" id="btnProcess">⚙️ Procesar todos los Excel</button>
+
+    <div class="status-bar status-info" id="statusBar"></div>
+
+    <div id="previewSection" style="display:none;margin-top:16px;">
+      <div class="summary-grid" id="summaryGrid"></div>
+      <div style="margin-top:16px;overflow-x:auto;max-height:300px;overflow-y:auto;">
+        <table class="preview-table" id="previewTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 4: DESCARGAR -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">4</span> Descargar y subir a GitHub</div>
+    <div class="download-section" id="downloadSection">
+      <h3>⏳ Primero procesa los Excel (Paso 3)</h3>
+      <p>Una vez procesado, aquí aparecerá el botón para descargar el <strong>datos.json</strong></p>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div class="card-title" style="margin-bottom:12px;">📋 Instrucciones para subir a GitHub</div>
+      <div class="steps-guide">
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">Descarga el archivo <strong>datos.json</strong> con el botón de arriba</div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Entra a tu repositorio en <strong>github.com</strong></div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-text">Haz clic en el archivo <strong>datos.json</strong> que ya existe → luego en el ícono ✏️ (editar)</div></div>
+        <div class="step-item"><div class="step-num">4</div><div class="step-text">Borra todo el contenido y pega el nuevo. O usa el botón <strong>"Upload files"</strong> para reemplazarlo directamente</div></div>
+        <div class="step-item"><div class="step-num">5</div><div class="step-text">Haz clic en <strong>"Commit changes"</strong> → el dashboard se actualiza automáticamente en segundos ✅</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── COLUMNAS COMUNES (siempre presentes en todos los indicadores) ──
+const COLS_COMUNES = ['N°','CODIGO IPRESS','ESTABLECIMIENTO','MICRORED','SERVICIO',
+  'DNI PACIENTE','NOMBRE PACIENTE','ESTADO','MOTIVO / RECOMENDACION','PERIODO'];
+
+let rowCount = 0;
+const indicadorData = {}; // {rowId: {totales: [...], detalle: [...]}}
+
+// Agregar 3 filas por defecto
+window.onload = () => { addRow(); addRow(); addRow(); };
+
+function addRow() {
+  rowCount++;
+  const id = rowCount;
+  const tbody = document.getElementById('indBody');
+  const tr = document.createElement('tr');
+  tr.id = `row_${id}`;
+  tr.innerHTML = `
+    <td>
+      <input type="text" id="nombre_${id}" placeholder="Ej: IP02 — HbA1c" style="margin-bottom:4px;">
+      <input type="text" id="desc_${id}" placeholder="Descripción corta" style="font-size:11px;color:var(--text3);">
+    </td>
+    <td><input type="text" id="meta_${id}" value="25" style="width:70px;text-align:center;"> %</td>
+    <td>
+      <label class="file-drop" id="dropTot_${id}">
+        <span>📂</span><span id="lblTot_${id}">Seleccionar Excel totales</span>
+        <input type="file" accept=".xlsx,.xls" onchange="loadTotales(event,${id})">
+      </label>
+    </td>
+    <td>
+      <label class="file-drop" id="dropDet_${id}">
+        <span>👥</span><span id="lblDet_${id}">Seleccionar Excel detalle</span>
+        <input type="file" accept=".xlsx,.xls" onchange="loadDetalle(event,${id})">
+      </label>
+    </td>
+    <td><button class="btn btn-sm" style="background:#fee2e2;color:var(--red);border:1px solid #fca5a5;" onclick="removeRow(${id})">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function removeRow(id) {
+  document.getElementById(`row_${id}`)?.remove();
+  delete indicadorData[id];
+}
+
+// ── LEER EXCEL DE TOTALES ──
+function loadTotales(event, id) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+
+      // Buscar fila de headers (busca fila con "ESTABLECIMIENTO")
+      let headerRow = -1;
+      for (let i = 0; i < Math.min(raw.length, 10); i++) {
+        if (raw[i].some(c => String(c).toUpperCase().includes('ESTABLECIMIENTO'))) {
+          headerRow = i; break;
+        }
+      }
+      if (headerRow === -1) { alert('No se encontraron los encabezados en el Excel de totales.'); return; }
+
+      const headers = raw[headerRow].map(h => String(h).trim().toUpperCase());
+      const iEst = headers.findIndex(h => h.includes('ESTABLECIMIENTO'));
+      const iMR  = headers.findIndex(h => h.includes('MICRORED'));
+      const iCod = headers.findIndex(h => h.includes('CODIGO') || h.includes('CÓD'));
+      const iNum = findCol(headers, ['NUMERADOR','NUM','ATENDIDOS CON']);
+      const iDen = findCol(headers, ['DENOMINADOR','DEN','TOTAL']);
+      const iAv  = findCol(headers, ['AVANCE','%','PORCENTAJE','RESULTADO']);
+      const iEst2= findCol(headers, ['ESTADO','CUMPLE']);
+
+      const datos = [];
+      for (let i = headerRow + 1; i < raw.length; i++) {
+        const r = raw[i];
+        if (!r[iEst] || String(r[iEst]).trim() === '') continue;
+        const num = parseFloat(r[iNum]) || 0;
+        const den = parseFloat(r[iDen]) || 0;
+        const av  = den > 0 ? num/den : (parseFloat(r[iAv]) || 0);
+        const estado = String(r[iEst2] || '').trim().toUpperCase();
+        datos.push({
+          cod: parseInt(r[iCod]) || 0,
+          est: String(r[iEst]).trim(),
+          mr:  String(r[iMR] || '').trim() || 'SIN MICRORED',
+          num, den,
+          av: parseFloat(av.toFixed(4)),
+          estado: estado.includes('SI') || estado.includes('SÍ') || estado.includes('CUMPLE') && !estado.includes('NO') ? 'SI CUMPLE'
+                : estado.includes('SIN') || den === 0 ? 'SIN PACIENTES' : 'NO CUMPLE'
+        });
+      }
+
+      if (!indicadorData[id]) indicadorData[id] = {};
+      indicadorData[id].totales = datos;
+      document.getElementById(`lblTot_${id}`).textContent = `✓ ${file.name} (${datos.length} IPRESS)`;
+      document.getElementById(`dropTot_${id}`).classList.add('loaded');
+    } catch(err) {
+      alert('Error leyendo el Excel de totales: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── LEER EXCEL DE DETALLE ──
+function loadDetalle(event, id) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+      const allDetalle = [];
+
+      wb.SheetNames.forEach(sheetName => {
+        const ws = wb.Sheets[sheetName];
+        const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+
+        // Auto-detectar fila de headers buscando DNI, ESTABLECIMIENTO o NOMBRE PACIENTE
+        let headerRow = -1;
+        for (let i = 0; i < Math.min(raw.length, 15); i++) {
+          const vals = raw[i].map(c => String(c||'').toUpperCase());
+          if (vals.some(v => v.includes('DNI') || v.includes('ESTABLECIMIENTO') || v.includes('NOMBRE PACIENTE'))) {
+            headerRow = i; break;
+          }
+        }
+        if (headerRow === -1) return;
+
+        const headers = raw[headerRow].map(h => String(h||'').trim());
+        const iEstado = headers.findIndex(h => h.toUpperCase().includes('ESTADO'));
+
+        for (let i = headerRow + 1; i < raw.length; i++) {
+          const r = raw[i];
+          if (!r.some(v => v !== '' && v !== null && v !== undefined)) continue;
+          const obj = {_sheet: sheetName};
+          headers.forEach((h, idx) => {
+            let val = r[idx] !== undefined && r[idx] !== null ? String(r[idx]).trim() : '';
+            // Normalizar ESTADO: CUMPLE -> SI CUMPLE, NO CUMPLE queda igual
+            if (idx === iEstado) {
+              const up = val.toUpperCase();
+              if ((up === 'CUMPLE' || up === 'SI CUMPLE' || up === 'SÍ CUMPLE') && !up.startsWith('NO')) {
+                val = 'SI CUMPLE';
+              } else if (up.includes('NO')) {
+                val = 'NO CUMPLE';
+              }
+            }
+            obj[h] = val;
+          });
+          allDetalle.push(obj);
+        }
+      });
+
+      if (!indicadorData[id]) indicadorData[id] = {};
+      indicadorData[id].detalle = allDetalle;
+      document.getElementById(`lblDet_${id}`).textContent = `✓ ${file.name} (${allDetalle.length} pacientes)`;
+      document.getElementById(`dropDet_${id}`).classList.add('loaded');
+    } catch(err) {
+      alert('Error leyendo el Excel de detalle: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function findCol(headers, keywords) {
+  for (const kw of keywords) {
+    const idx = headers.findIndex(h => h.includes(kw.toUpperCase()));
+    if (idx !== -1) return idx;
+  }
+  return -1;
+}
+
+// ── PROCESAR TODO ──
+let jsonFinal = null;
+
+function processar() {
+  const periodo = document.getElementById('periodo').value.trim() || 'Sin período';
+  const rows = document.querySelectorAll('#indBody tr');
+  const indicadores = [];
+  const errores = [];
+
+  rows.forEach(tr => {
+    const id = parseInt(tr.id.replace('row_',''));
+    const nombre = document.getElementById(`nombre_${id}`)?.value.trim();
+    const desc   = document.getElementById(`desc_${id}`)?.value.trim();
+    const meta   = parseFloat(document.getElementById(`meta_${id}`)?.value) / 100 || 0.25;
+
+    if (!nombre) { errores.push(`Fila ${id}: falta el nombre del indicador`); return; }
+    if (!indicadorData[id]?.totales) { errores.push(`"${nombre}": falta el Excel de totales`); return; }
+
+    indicadores.push({
+      id: `ind_${id}`,
+      nombre,
+      titulo: desc || nombre,
+      descripcion: desc || nombre,
+      meta,
+      metaLabel: `Meta: ${(meta*100).toFixed(0)}%`,
+      color: ['#3b9edd','#2d7d46','#e8a020','#a855f7','#ef4444','#0891b2','#d97706','#059669','#7c3aed','#dc2626'][indicadores.length % 10],
+      datos: indicadorData[id].totales,
+      detalle: indicadorData[id].detalle || []
+    });
+  });
+
+  const statusBar = document.getElementById('statusBar');
+  statusBar.style.display = 'block';
+
+  if (errores.length > 0) {
+    statusBar.className = 'status-bar status-err';
+    statusBar.innerHTML = '⚠️ Errores:<br>' + errores.map(e=>`• ${e}`).join('<br>');
+    return;
+  }
+
+  if (indicadores.length === 0) {
+    statusBar.className = 'status-bar status-err';
+    statusBar.textContent = '⚠️ No hay indicadores configurados.';
+    return;
+  }
+
+  jsonFinal = { periodo, generado: new Date().toISOString(), indicadores };
+
+  // Preview
+  const totalIpress = indicadores[0].datos.length;
+  const totalPacientes = indicadores.reduce((s,i) => s + i.detalle.length, 0);
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-box"><div class="val">${indicadores.length}</div><div class="lbl">Indicadores</div></div>
+    <div class="summary-box"><div class="val">${totalIpress}</div><div class="lbl">IPRESS</div></div>
+    <div class="summary-box"><div class="val">${totalPacientes.toLocaleString()}</div><div class="lbl">Pacientes en detalle</div></div>
+  `;
+
+  let previewHTML = `<thead><tr><th>Indicador</th><th>Meta</th><th>IPRESS</th><th>Totales</th><th>Pacientes detalle</th><th>Estado</th></tr></thead><tbody>`;
+  indicadores.forEach(ind => {
+    const ok = ind.datos.length > 0;
+    previewHTML += `<tr>
+      <td>${ind.nombre}</td>
+      <td>${ind.metaLabel}</td>
+      <td>${ind.datos.length}</td>
+      <td>✓</td>
+      <td>${ind.detalle.length > 0 ? ind.detalle.length.toLocaleString() + ' pac.' : '<span style="color:var(--text3)">Sin detalle</span>'}</td>
+      <td><span class="${ok?'badge-ok':'badge-err'}">${ok?'OK':'ERROR'}</span></td>
+    </tr>`;
+  });
+  previewHTML += '</tbody>';
+  document.getElementById('previewTable').innerHTML = previewHTML;
+  document.getElementById('previewSection').style.display = 'block';
+
+  statusBar.className = 'status-bar status-ok';
+  statusBar.textContent = `✅ Procesado correctamente. ${indicadores.length} indicadores listos para descargar.`;
+
+  // Habilitar descarga
+  document.getElementById('downloadSection').innerHTML = `
+    <h3 style="color:var(--green)">✅ datos.json listo para descargar</h3>
+    <p>Descarga este archivo y súbelo a GitHub para actualizar el dashboard</p>
+    <button class="btn btn-success" onclick="downloadJSON()" style="font-size:15px;padding:12px 28px;">
+      ⬇️ Descargar datos.json
+    </button>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3);">
+      Período: <strong>${periodo}</strong> · Generado: ${new Date().toLocaleString('es-PE')}
+    </div>
+  `;
+}
+
+function downloadJSON() {
+  if (!jsonFinal) return;
+  const blob = new Blob([JSON.stringify(jsonFinal, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'datos.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
